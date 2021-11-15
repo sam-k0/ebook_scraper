@@ -1,29 +1,34 @@
 import pynput
 from PIL import ImageGrab
 import time
+from nhentei import nfunctions
+import sys
+import api
+import topdf
 
-pages = 1
 
-# instantiate mouse controller for scrolling action
-mouse = pynput.mouse.Controller()
 
-print("Waiting 2 seconds before starting. Get ready.")
-time.sleep(2)
-print("starting...")
+if(len(sys.argv) < 2):
+    print("Please launch with startup parameter")
+    exit()
 
-# repeat for all pages
-for i in range(pages):
-    # take a screenshot of the actual page on the screen (edit bounds)
-    screenshot = ImageGrab.grab(bbox=(460, 84, 892, 697))
-    # save picture to folder
-    screenshot.save(f"./out/page_{i}.png")
-    print(f"saving picture {i}")
-    # scroll to next page (in this case just scrolling on single line down)
-    mouse.scroll(0, -1)
-    # wait for scrolling animation to finish
-    time.sleep(0.2)
+# Get hentaiID as startup param
+hentaiID = sys.argv[1]
 
-print(f"done. Took {pages} pictures! :D")
+hentaiDict = nfunctions.getByID(hentaiID) # API call to dict
+hentaiPages = hentaiDict['num_pages'] # Get page count
+hentaiMediaID = hentaiDict['media_id'] # To get the images
+hentaiImages = list()                 # To store the image links
+
+# populate image array with links
+hentaiImages = api.fillImageLinks(hentaiMediaID, hentaiPages)
+
+# Download images
+dlpath = "./"+str(hentaiDict['id']) # Relative store path
+api.downloadImageLinks(hentaiImages, dlpath) # Download and save
+
+# Compile pdf
+topdf.compilePDF(dlpath, hentaiDict['title']['english'])
 
 
 
